@@ -1,0 +1,162 @@
+.plate-detection-app {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+  min-height: 100vh;
+}
+
+.app-header {
+  text-align: center;
+  margin-bottom: 40px;
+  color: white;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.app-header h1 {
+  font-size: 2.5rem;
+  margin-bottom: 10px;
+  font-weight: 700;
+}
+
+.app-header p {
+  font-size: 1.2rem;
+  opacity: 0.9;
+}
+
+.local-mode-badge {
+  background: rgba(33, 150, 243, 0.2);
+  border: 2px solid #2196F3;
+  border-radius: 25px;
+  padding: 10px 20px;
+  margin-top: 15px;
+  color: #ffffff;
+  font-weight: 600;
+  font-size: 0.9rem;
+  display: inline-block;
+  backdrop-filter: blur(10px);
+}
+
+.app-main {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 30px;
+}
+
+.upload-section,
+.preview-section,
+.action-section,
+.results-section {
+  width: 100%;
+  max-width: 600px;
+  max-height: 800px;
+  margin: 0 auto;
+  border: 2px solid #2196F3;  
+  border-radius: 10px;  
+  padding: 20px;  
+  background: rgba(255, 255, 255, 0.1);  
+  backdrop-filter: blur(10px);
+  
+}
+
+.upload-section {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: transform 0.3s ease;
+}
+
+.upload-section:hover{
+  transform: scale(1.25)
+}
+
+.action-section {
+  text-align: center;
+}
+
+.analyze-button {
+  background: linear-gradient(45deg, #1976D2, #0D47A1);
+  color: white;
+  border: none;
+  padding: 15px 40px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  border-radius: 30px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(25, 118, 210, 0.3);
+}
+
+.analyze-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(25, 118, 210, 0.4);
+}
+
+.analyze-button:active {
+  transform: translateY(0);
+}
+
+.analyze-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.reset-button {
+  background: linear-gradient(45deg, #42A5F5, #1E88E5);
+  color: white;
+  border: none;
+  padding: 12px 30px;
+  font-size: 1rem;
+  font-weight: 600;
+  border-radius: 25px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(33, 150, 243, 0.3);
+  margin-top: 20px;
+}
+
+.reset-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(33, 150, 243, 0.4);
+}
+
+.error-section {
+  width: 100%;
+  max-width: 600px;
+}
+
+.error-message {
+  background: rgba(244, 67, 54, 0.1);
+  border: 2px solid #f44336;
+  border-radius: 10px;
+  padding: 20px;
+  color: #f44336;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 500;
+}
+
+.error-icon {
+  font-size: 1.5rem;
+}
+
+@media (max-width: 768px) {
+  .plate-detection-app {
+    padding: 15px;
+  }
+
+  .app-header h1 {
+    font-size: 2rem;
+  }
+
+  .app-header p {
+    font-size: 1rem;
+  }
+
+  .analyze-button {
+    padding: 12px 30px;
+    font-size: 1rem;
+  }
+}

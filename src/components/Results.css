@@ -1,0 +1,162 @@
+.results-container {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border-radius: 15px;
+  padding: 30px;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+}
+
+.results-container h3 {
+  color: #333;
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: 25px;
+  text-align: center;
+}
+
+.result-card {
+  display: flex;
+  flex-direction: column;
+  gap: 25px;
+}
+
+.status-indicator {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 25px;
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.status-indicator.regular {
+  background: linear-gradient(135deg, rgba(76, 175, 80, 0.1), rgba(139, 195, 74, 0.1));
+  border: 2px solid #4CAF50;
+}
+
+.status-indicator.irregular {
+  background: linear-gradient(135deg, rgba(244, 67, 54, 0.1), rgba(255, 87, 34, 0.1));
+  border: 2px solid #f44336;
+}
+
+.status-icon {
+  font-size: 3rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.status-text {
+  flex: 1;
+}
+
+.status-text h4 {
+  font-size: 1.4rem;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.status-indicator.regular .status-text h4 {
+  color: #2E7D32;
+}
+
+.status-indicator.irregular .status-text h4 {
+  color: #C62828;
+}
+
+.status-text p {
+  color: #666;
+  font-size: 1rem;
+  opacity: 0.9;
+}
+
+.plate-info {
+  text-align: center;
+  padding: 20px;
+  background: rgba(102, 126, 234, 0.1);
+  border-radius: 10px;
+  border: 1px solid rgba(102, 126, 234, 0.3);
+}
+
+.plate-info h5 {
+  color: #333;
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 15px;
+}
+
+.plate-number {
+  background: #333;
+  color: white;
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-family: 'Courier New', monospace;
+  font-size: 1.5rem;
+  font-weight: bold;
+  letter-spacing: 3px;
+  display: inline-block;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+}
+
+.detection-details {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  padding: 20px;
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 10px;
+}
+
+.detail-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.detail-item:last-child {
+  border-bottom: none;
+}
+
+.detail-label {
+  font-weight: 600;
+  color: #555;
+}
+
+.detail-value {
+  color: #333;
+  font-weight: 500;
+}
+
+@media (max-width: 768px) {
+  .results-container {
+    padding: 20px;
+  }
+  
+  .status-indicator {
+    flex-direction: column;
+    text-align: center;
+    gap: 15px;
+    padding: 20px;
+  }
+  
+  .status-icon {
+    font-size: 2.5rem;
+  }
+  
+  .status-text h4 {
+    font-size: 1.2rem;
+  }
+  
+  .plate-number {
+    font-size: 1.3rem;
+    letter-spacing: 2px;
+  }
+  
+  .detail-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 5px;
+  }
+}
