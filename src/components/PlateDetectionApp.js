@@ -92,8 +92,7 @@ const PlateDetectionApp = () => {
             resetTrigger={resetImageUpload}
           />
         </div>
-
-        
+       
 
         {error && (
           <div className="error-section">
