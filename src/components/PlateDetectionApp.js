@@ -93,11 +93,7 @@ const PlateDetectionApp = () => {
           />
         </div>
 
-        {imagePreview && (
-          <div className="preview-section">
-            <ImagePreview imagePreview={imagePreview} />
-          </div>
-        )}
+        
 
         {error && (
           <div className="error-section">
@@ -117,6 +113,12 @@ const PlateDetectionApp = () => {
             >
               Analisar Nova Imagem
             </button>
+          </div>
+        )}
+
+        {imagePreview && (
+          <div className="preview-section">
+            <ImagePreview imagePreview={imagePreview} />
           </div>
         )}
       </main>
