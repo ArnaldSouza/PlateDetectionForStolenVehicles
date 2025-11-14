@@ -7,7 +7,9 @@ const Results = ({ results }) => {
     isRegular,
     detectionDetails,
     timestamp,   
-    scoreFinal
+    scoreFinal,
+    situacao,
+    detalhes_situacao
   } = results;
 
   return (
@@ -40,8 +42,20 @@ const Results = ({ results }) => {
             <span className="detail-value">
               {scoreFinal ? `${(scoreFinal * 100).toFixed(1)}%` : 'N/A'}
             </span>
-          </div>          
-          
+          </div>  
+
+          <div className="detail-item">
+            <span className="detail-label">Situação:</span>
+            <span className={`situacao ${situacao ? situacao.toLowerCase() : ''}`}>
+              {situacao || 'N/A'}
+            </span>
+          </div>
+
+           <div className="detail-item">
+            <span className="detail-label">Detalhes:</span>
+            <span className="detail-value">{detalhes_situacao || 'N/A'}</span>
+          </div>
+
           {timestamp && (
             <div className="detail-item">
               <span className="detail-label">Processado em:</span>

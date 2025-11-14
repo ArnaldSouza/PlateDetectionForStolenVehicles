@@ -13,7 +13,8 @@ const PlateDetectionApp = () => {
   const [processingStatus, setProcessingStatus] = useState('');
   const [results, setResults] = useState(null);
   const [error, setError] = useState(null);
-
+  const [resetImageUpload, setResetImageUpload] = useState(0);
+  
   const onDrop = useCallback((acceptedFiles) => {
     const file = acceptedFiles[0];
     if (file) {
@@ -40,8 +41,9 @@ const PlateDetectionApp = () => {
       confidence: data.confianca,
       detectionDetails: data.detalhes_situacao,
       timestamp: new Date().toISOString(),
-      tipoPlaca: data.tipo_placa,
-      scoreFinal: data.score_final
+      scoreFinal: data.score_final,
+      situacao: data.situacao,
+      detalhes_situacao: data.detalhes_situacao
     };
 
     setResults(formattedResults);
@@ -72,6 +74,7 @@ const PlateDetectionApp = () => {
     setError(null);
     setProcessingStatus('');
     setIsProcessing(false);
+    setResetImageUpload(prev => prev + 1);
   };
 
   return (
@@ -86,6 +89,7 @@ const PlateDetectionApp = () => {
           <ImageUpload
             onImageProcessed={handleImageProcessed}
             onImageSelected={handleImageSelected}
+            resetTrigger={resetImageUpload}
           />
         </div>
 

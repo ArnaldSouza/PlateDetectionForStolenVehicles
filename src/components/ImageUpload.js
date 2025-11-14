@@ -1,23 +1,25 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { useDropzone } from 'react-dropzone';
 import './ImageUpload.css';
 
-const ImageUpload = ({ onImageProcessed, onImageSelected, onReset }) => {
+const ImageUpload = ({ onImageProcessed, onImageSelected, resetTrigger }) => {
   const [hasImage, setHasImage] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [resultado, setResultado] = useState(null);
   const [error, setError] = useState(null);
+  const [uploadStatus, setUploadStatus] = useState('');
 
   const handleReset = () => {
     setHasImage(false);
     setIsProcessing(false);
-    setResultado(null);
     setError(null);
+    setUploadStatus('');
   };
 
-  React.useImperativeHandle(onReset, () => ({
-    reset: handleReset
-  }));
+  useEffect(() => {
+    if (resetTrigger > 0) {
+      handleReset();
+    }
+  }, [resetTrigger]);
 
   // Função que é chamada quando o usuário solta ou escolhe uma imagem
   const onDrop = useCallback((acceptedFiles) => {
@@ -54,7 +56,6 @@ const ImageUpload = ({ onImageProcessed, onImageSelected, onReset }) => {
       }
 
       if (data.detectado) {
-        setResultado(data);
         if (onImageProcessed) {
           onImageProcessed(data);
         }
@@ -117,28 +118,8 @@ const ImageUpload = ({ onImageProcessed, onImageSelected, onReset }) => {
           <span className="error-icon">⚠️</span>
           {error}
         </div>
-      )}
-
-      {/* Exibição do resultado da API */}
-      {resultado && (
-        <div className="resultado-api">
-          <h4>Resultado da Detecção:</h4>
-          <div className="resultado-detalhes">
-            <div className="detalhe-item">
-              <strong>Placa:</strong> {resultado.placa}
-            </div>
-            <div className="detalhe-item">
-              <strong>Situação:</strong>
-              <span className={`situacao ${resultado.situacao.toLowerCase()}`}>
-                {resultado.situacao}
-              </span>
-            </div>
-            <div className="detalhe-item">
-              <strong>Detalhes:</strong> {resultado.detalhes_situacao}
-            </div>
-          </div>
-        </div>
-      )}
+      )}     
+      
     </div>
   );
 };
