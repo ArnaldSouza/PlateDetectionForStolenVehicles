@@ -41,6 +41,8 @@
   flex-direction: column;
   align-items: center;
   gap: 30px;
+  position: relative;
+  z-index: 1;
 }
 
 .upload-section,
@@ -49,14 +51,21 @@
 .results-section {
   width: 100%;
   max-width: 600px;
-  max-height: 800px;
   margin: 0 auto;
   border: 2px solid #2196F3;  
   border-radius: 10px;  
   padding: 20px;  
   background: rgba(255, 255, 255, 0.1);  
   backdrop-filter: blur(10px);
-  
+  position: relative;
+  z-index: 2;
+}
+
+.results-section {
+  max-width: 800px;
+  min-height: auto;
+  clear: both;
+  margin-top: 20px;
 }
 
 .upload-section {

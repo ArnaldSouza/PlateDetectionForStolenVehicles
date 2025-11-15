@@ -14,6 +14,7 @@ const PlateDetectionApp = () => {
   const [results, setResults] = useState(null);
   const [error, setError] = useState(null);
   const [resetImageUpload, setResetImageUpload] = useState(0);
+  const [boundingBoxes, setBoundingBoxes] = useState([]);
   
   const onDrop = useCallback((acceptedFiles) => {
     const file = acceptedFiles[0];
@@ -43,8 +44,20 @@ const PlateDetectionApp = () => {
       timestamp: new Date().toISOString(),
       scoreFinal: data.score_final,
       situacao: data.situacao,
-      detalhes_situacao: data.detalhes_situacao
+      detalhes_situacao: data.detalhes_situacao,
+      cropPlaca: data.crop_placa,
+      tipoPlaca: data.tipo_placa,
+      coordenadasDeteccao: data.coordenadas_deteccao,
+      todasPlacas: data.todas_placas || []
     };
+
+    // Extrair coordenadas de todas as placas para os bounding boxes
+    if (data.todas_placas && data.todas_placas.length > 0) {
+      const boxes = data.todas_placas.map(placa => placa.coordenadas);
+      setBoundingBoxes(boxes);
+    } else if (data.coordenadas_deteccao) {
+      setBoundingBoxes([data.coordenadas_deteccao]);
+    }
 
     setResults(formattedResults);
     setProcessingStatus('Processamento concluído!');
@@ -74,6 +87,7 @@ const PlateDetectionApp = () => {
     setError(null);
     setProcessingStatus('');
     setIsProcessing(false);
+    setBoundingBoxes([]);
     setResetImageUpload(prev => prev + 1);
   };
 
@@ -92,8 +106,7 @@ const PlateDetectionApp = () => {
             resetTrigger={resetImageUpload}
           />
         </div>
-
-        
+             
 
         {error && (
           <div className="error-section">
@@ -101,6 +114,16 @@ const PlateDetectionApp = () => {
               <span className="error-icon">⚠️</span>
               {error}
             </div>
+          </div>
+        )}
+
+
+        {imagePreview && (
+          <div className="preview-section">
+            <ImagePreview 
+              imagePreview={imagePreview} 
+              boundingBoxes={boundingBoxes}
+            />
           </div>
         )}
 
@@ -113,12 +136,6 @@ const PlateDetectionApp = () => {
             >
               Analisar Nova Imagem
             </button>
-          </div>
-        )}
-
-        {imagePreview && (
-          <div className="preview-section">
-            <ImagePreview imagePreview={imagePreview} />
           </div>
         )}
       </main>

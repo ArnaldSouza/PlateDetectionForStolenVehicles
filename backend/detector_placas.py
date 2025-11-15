@@ -9,6 +9,14 @@ import torchvision.transforms as transforms
 from torchvision.models.detection import fasterrcnn_resnet50_fpn
 from ultralytics import YOLO
 import time
+import base64
+
+# Adicionar função para converter imagem para base64
+def imagem_para_base64(imagem):
+    """Converte imagem OpenCV para string base64"""
+    _, buffer = cv2.imencode('.jpg', imagem)
+    img_base64 = base64.b64encode(buffer).decode('utf-8')
+    return f"data:image/jpeg;base64,{img_base64}"
 
 # Inicializar EasyOCR
 reader = easyocr.Reader(['pt', 'en'], gpu=True)
@@ -223,6 +231,8 @@ def validar_formato_placa(texto, eh_mercosul=False):
     
     return {'valido': False, 'score': 0.0, 'tipo': 'invalido'}
 
+
+
 # Corrigir caracteres confusos
 def corrigir_caracteres_confusos(texto, eh_mercosul=False):
     texto = texto.upper().strip()
@@ -333,7 +343,7 @@ def processar_ocr_completo(placa_crop, reader, eh_mercosul=False):
     todos_resultados.sort(key=lambda x: x['score_final'], reverse=True)
     return todos_resultados
 
-# Função principal para processar placas
+# Modificar a função processar_placas para incluir os crops nos resultados
 def processar_placas(imagem_path, modelo_yolo=None, modelo_faster=None):
     inicio = time.time()
     
@@ -355,7 +365,7 @@ def processar_placas(imagem_path, modelo_yolo=None, modelo_faster=None):
     resultados_placas = []
     
     for i, (x1, y1, x2, y2, conf_det) in enumerate(placas):
-        # Crop da placa
+        # Crop da placa com padding
         padding = 5
         placa_crop = img[max(0, y1-padding):min(img.shape[0], y2+padding), 
                         max(0, x1-padding):min(img.shape[1], x2+padding)]
@@ -383,7 +393,7 @@ def processar_placas(imagem_path, modelo_yolo=None, modelo_faster=None):
             'score_final': score_final,
             'eh_mercosul': eh_mercosul,
             'coordenadas': (x1, y1, x2, y2),
-            'crop': placa_crop
+            'crop': placa_crop  # Mantém o crop na estrutura de dados
         }
         
         resultados_placas.append(resultado_placa)
@@ -396,7 +406,8 @@ def processar_placas(imagem_path, modelo_yolo=None, modelo_faster=None):
     return {
         'total_placas': len(resultados_placas),
         'placas': resultados_placas,
-        'tempo_processamento': tempo_total
+        'tempo_processamento': tempo_total,
+        'imagem_original': img  # Adicionar imagem original aos resultados
     }
 
 # Visualizar resultados
@@ -411,55 +422,59 @@ def visualizar_resultados(resultado, imagem_path):
     # Desenhar detecções
     for placa in resultado['placas']:
         x1, y1, x2, y2 = placa['coordenadas']
-        cor = (0, 255, 0) if placa['eh_mercosul'] else (0, 0, 255)
-        cv2.rectangle(img_visualizacao, (x1, y1), (x2, y2), cor, 3)
-        cv2.putText(img_visualizacao, f"{placa['placa_id']} - {placa['texto']}", 
-                   (x1, y1-10), cv2.FONT_HERSHEY_SIMPLEX, 0.7, cor, 2)
+        
+        cv2.rectangle(img_visualizacao, (x1, y1), (x2, y2), (0, 0, 255), 3)
+        cv2.putText(img_visualizacao, f"Placa {placa['placa_id']} ({placa['score_final']:.2f})", 
+                   (x1, y1-10), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
     
     # Mostrar resultado
-    plt.figure(figsize=(12, 8))
+    # Mostrar imagem original com retângulos vermelhos
+    plt.figure(figsize=(15, 10))
+    
+    # Subplot 1: Imagem original com retângulos
+    plt.subplot(2, 1, 1)
     plt.imshow(cv2.cvtColor(img_visualizacao, cv2.COLOR_BGR2RGB))
-    plt.title(f"{resultado['total_placas']} Placa(s) Detectada(s)")
+    plt.title(f"Imagem Original - {resultado['total_placas']} Placa(s) Detectada(s)")
     plt.axis('off')
-    plt.show()
+    
+    # Subplot 2: Crops das placas
+    plt.subplot(2, 1, 2)
     
     # Mostrar crops das placas
     num_placas = len(resultado['placas'])
     if num_placas > 0:
-        cols = min(3, num_placas)
-        rows = (num_placas + cols - 1) // cols
-        
-        fig, axes = plt.subplots(rows, cols, figsize=(5*cols, 4*rows))
-        
-        for i, placa in enumerate(resultado['placas']):
-            if rows == 1 and cols == 1:
-                ax = axes
-            elif rows == 1:
-                ax = axes[i]
-            elif cols == 1:
-                ax = axes[i]
-            else:
-                ax = axes[i // cols, i % cols]
+        # Criar uma imagem concatenada com todos os crops
+        crops_concatenados = []
+        for placa in resultado['placas']:
+            crop = placa['crop']
+            # Redimensionar crop para altura padrão
+            altura_padrao = 100
+            fator = altura_padrao / crop.shape[0]
+            nova_largura = int(crop.shape[1] * fator)
+            crop_redimensionado = cv2.resize(crop, (nova_largura, altura_padrao))
             
-            ax.imshow(cv2.cvtColor(placa['crop'], cv2.COLOR_BGR2RGB))
-            tipo = "🔵 MERCOSUL" if placa['eh_mercosul'] else "⚪ ANTIGO"
-            ax.set_title(f"Placa {placa['placa_id']}: {placa['texto']}\n{tipo}")
-            ax.axis('off')
+            # Adicionar texto no crop
+            crop_com_texto = crop_redimensionado.copy()
+            tipo = "MERCOSUL" if placa['eh_mercosul'] else "ANTIGO"
+            cv2.putText(crop_com_texto, f"P{placa['placa_id']}: {placa['texto']}", 
+                       (5, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
+            cv2.putText(crop_com_texto, tipo, 
+                       (5, 40), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255, 255, 255), 1)
+            
+            crops_concatenados.append(crop_com_texto)
         
-        # Esconder axes vazios
-        total_subplots = rows * cols
-        for i in range(num_placas, total_subplots):
-            if rows == 1 and cols == 1:
-                continue
-            elif rows == 1:
-                axes[i].axis('off')
-            elif cols == 1:
-                axes[i].axis('off')
-            else:
-                axes[i // cols, i % cols].axis('off')
+        # Concatenar horizontalmente
+        if len(crops_concatenados) > 1:
+            imagem_crops = np.hstack(crops_concatenados)
+        else:
+            imagem_crops = crops_concatenados[0]
         
-        plt.tight_layout()
-        plt.show()
+        plt.imshow(cv2.cvtColor(imagem_crops, cv2.COLOR_BGR2RGB))
+        plt.title("Crops das Placas Detectadas")
+        plt.axis('off')
+    
+    plt.tight_layout()
+    plt.show()
 
 # Função principal de uso
 def main(imagem_path):

@@ -4,6 +4,10 @@
   border-radius: 15px;
   padding: 30px;
   box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  position: relative;
+  z-index: 10;
+  margin-bottom: 30px;
 }
 
 .results-container h3 {
@@ -98,6 +102,319 @@
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
 }
 
+.plate-type {
+  margin-top: 10px;
+  color: #666;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.plate-crop-section {
+  text-align: center;
+  padding: 20px;
+  background: rgba(52, 152, 219, 0.1);
+  border-radius: 12px;
+  border: 1px solid rgba(52, 152, 219, 0.3);
+}
+
+.plate-crop-section h5 {
+  color: #333;
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 15px;
+}
+
+.plate-crop-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.plate-crop-image {
+  width: 400px; /* Largura fixa */
+  height: 200px; /* Altura fixa */
+  object-fit: contain; /* Mantém proporção, não corta */
+  border-radius: 8px;
+  border: 2px solid #007bff;
+  box-shadow: 0 2px 8px rgba(0, 123, 255, 0.2);
+  background-color: white;
+}
+
+.crop-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+}
+
+.crop-label {
+  color: #666;
+  font-size: 0.85rem;
+  font-style: italic;
+}
+
+/* Estilos para múltiplas placas */ 
+.all-plates-section {
+  padding: 20px;
+  background: rgba(81, 76, 175, 0.1);
+  border-radius: 12px;
+  border: 1px solid rgba(76, 175, 80, 0.3);
+}
+
+.all-plates-section h5 {
+  color: #333;
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.plates-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 20px;
+}
+
+/* Para placa única, centralizada */
+.plates-grid.single-plate {
+  display: flex;
+  justify-content: center;
+}
+
+/* Para exatamente 2 placas, cada uma ocupa 50% */
+.plates-grid:has(.plate-card:nth-child(2):last-child) {
+  grid-template-columns: 1fr 1fr;
+}
+
+/* Para 3 ou mais placas, layout flexível */
+.plates-grid:has(.plate-card:nth-child(3)) {
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
+
+.plate-card {
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border: 2px solid #e0e0e0;
+  transition: transform 0.2s ease;
+}
+
+.plate-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+}
+
+.plate-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.plate-index {
+  background: #2196F3;
+  color: white;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: bold;
+}
+
+.plate-status {
+  padding: 4px 8px;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: bold;
+}
+
+.plate-status.regular {
+  background: rgba(76, 175, 80, 0.2);
+  color: #2E7D32;
+  border: 1px solid #4CAF50;
+}
+
+.plate-status.irregular {
+  background: rgba(244, 67, 54, 0.2);
+  color: #C62828;
+  border: 1px solid #f44336;
+}
+
+.plate-card .plate-number {
+  background: #333;
+  color: white;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-family: 'Courier New', monospace;
+  font-size: 1.1rem;
+  font-weight: bold;
+  letter-spacing: 2px;
+  text-align: center;
+  margin-bottom: 8px;
+}
+
+.plate-card .plate-type {
+  text-align: center;
+  color: #666;
+  font-size: 0.85rem;
+  margin-bottom: 12px;
+}
+
+.plate-crop-mini {
+  text-align: center;
+  margin: 12px 0;
+}
+
+.plate-crop-image-mini {
+  width: 250px;
+  height: 100px;
+  border-radius: 6px;
+  border: 1px solid #ddd;
+  object-fit: contain;
+  background: white;
+}
+
+/* Placa única - versão ampliada do card */
+.plate-card-single {
+  max-width: 400px;
+  width: 100%;
+}
+
+.plate-card-single .plate-number {
+  font-size: 1.4rem;
+  letter-spacing: 3px;
+  padding: 15px 20px;
+}
+
+.plate-card-single .plate-crop-image-mini.single {
+  max-width: 300px;
+  max-height: 120px;
+  border: solid 3px #eee;
+}
+
+.plate-details-mini {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.detail-mini {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  font-size: 0.9rem;
+}
+
+.detail-mini:last-child {
+  border-bottom: none;
+}
+
+.detail-mini span:first-child {
+  font-weight: 600;
+  color: #555;
+}
+
+.situacao-mini.regular {
+  color: #2E7D32;
+  font-weight: 500;
+}
+
+.situacao-mini.irregular {
+  color: #C62828;
+  font-weight: 500;
+}
+
+.detail-value-mini {
+  color: #333;
+  font-weight: 500;
+}
+
+/* Estilos para placa única expandida */
+.single-plate-section {
+  padding: 25px;
+  background: rgba(52, 152, 219, 0.15);
+  border-radius: 15px;
+  border: 2px solid rgba(52, 152, 219, 0.4);
+}
+
+.single-plate-section h5 {
+  color: #333;
+  font-size: 1.3rem;
+  font-weight: 600;
+  margin-bottom: 25px;
+  text-align: center;
+}
+
+.single-plate-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 25px;
+}
+
+.single-plate-info {
+  text-align: center;
+}
+
+.plate-number-large {
+  background: #333;
+  color: white;
+  padding: 20px 30px;
+  border-radius: 12px;
+  font-family: 'Courier New', monospace;
+  font-size: 2rem;
+  font-weight: bold;
+  letter-spacing: 4px;
+  display: inline-block;
+  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.2);
+  margin-bottom: 15px;
+}
+
+.plate-type-large {
+  color: #666;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.single-plate-crop {
+  text-align: center;
+  width: 100%;
+}
+
+.plate-crop-image-large {
+  max-width: 100%;
+  max-height: 300px;
+  min-width: 400px;
+  border-radius: 12px;
+  border: 3px solid #3498db;
+  object-fit: contain;
+  background: white;
+  padding: 15px;
+  box-shadow: 0 8px 25px rgba(52, 152, 219, 0.3);
+}
+
+/* Responsivo para placa única */
+@media (max-width: 768px) {
+  .plate-number-large {
+    font-size: 1.5rem;
+    letter-spacing: 3px;
+    padding: 15px 25px;
+  }
+  
+  .plate-crop-image-large {
+    min-width: 250px;
+    max-height: 200px;
+  }
+  
+  .single-plate-card {
+    gap: 20px;
+  }
+}
+
 .detection-details {
   display: flex;
   flex-direction: column;
@@ -105,6 +422,10 @@
   padding: 20px;
   background: rgba(0, 0, 0, 0.05);
   border-radius: 10px;
+  position: relative;
+  z-index: 5;
+  width: 100%;
+  clear: both;
 }
 
 .detail-item {
@@ -113,6 +434,22 @@
   align-items: center;
   padding: 10px 0;
   border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.detection-details .detail-item {
+  text-align: center;
+  justify-content: center;
+  border-top: 1px solid #eee;
+}
+
+.detection-details .detail-item .detail-label {
+  margin-right: 8px;
+  color: #666;
+}
+
+.detection-details .detail-item .detail-value {
+  color: #333;
+  font-weight: 500;
 }
 
 .detail-item:last-child {
@@ -152,6 +489,44 @@
   .plate-number {
     font-size: 1.3rem;
     letter-spacing: 2px;
+  }
+  
+  .plate-crop-image {
+    max-width: 250px;
+    max-height: 120px;
+  }
+  
+  .plates-grid {
+    grid-template-columns: 1fr;  
+    gap: 15px;
+  }
+  
+  .plates-grid.single-plate {
+    display: flex;
+    justify-content: center;
+  }
+  
+  .plate-card {
+    padding: 12px;
+  }
+  
+  .plate-card-single {
+    max-width: 320px;
+  }
+  
+  .plate-card-single .plate-number {
+    font-size: 1.2rem;
+    letter-spacing: 2px;
+  }
+  
+  .plate-crop-image-mini {
+    max-width: 150px;
+    max-height: 60px;
+  }
+  
+  .plate-card-single .plate-crop-image-mini.single {
+    max-width: 250px;
+    max-height: 100px;
   }
   
   .detail-item {
