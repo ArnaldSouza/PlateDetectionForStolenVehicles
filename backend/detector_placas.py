@@ -68,7 +68,7 @@ def carregar_modelos():
 def detectar_placas(imagem, model_yolo, model_faster):
     placas = []
     
-    # Tentar YOLOv8 primeiro
+    # Tentar YOLO primeiro
     if model_yolo is not None:
         resultados = model_yolo(imagem, conf=0.4, verbose=False)
         
@@ -87,6 +87,7 @@ def detectar_placas(imagem, model_yolo, model_faster):
             placas = placas_alta_confianca
         else:
             placas = []  # Limpar para fallback
+    
     
     # Fallback para Faster R-CNN
     if not placas and model_faster is not None:
