@@ -81,6 +81,18 @@ const Results = ({ results }) => {
                         {placa.detalhes_situacao}
                       </span>
                     </div>
+                    <div className="detail-mini">
+                      <span>Modelo:</span>
+                      <span className="detail-value-mini">
+                        {placa.modelo_deteccao || 'N/A'}
+                      </span>
+                    </div>
+                    <div className="detail-mini">
+                      <span>Conf. Detecção:</span>
+                      <span className="detail-value-mini">
+                        {placa.confianca_deteccao ? (placa.confianca_deteccao * 100).toFixed(1) + '%' : 'N/A'}
+                      </span>
+                    </div>
                   </div>
                 </div>
               ))}

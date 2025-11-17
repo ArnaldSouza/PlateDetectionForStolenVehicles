@@ -101,3 +101,16 @@ temp/
 
 # Build output
 build/
+
+# Modelos de machine learning (arquivos grandes)
+backend/modelos/
+modelos/
+
+# Arquivos de modelo (extensões comuns)
+*.pt
+*.pth
+*.onnx
+*.pkl
+*.h5
+*.pb
+*.weights
