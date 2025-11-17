@@ -108,7 +108,9 @@ def upload_file():
                     'detalhes_situacao': detalhes_placa,
                     'tipo_placa': 'MERCOSUL' if placa_detectada['eh_mercosul'] else 'ANTIGO',
                     'crop_placa': crop_base64,
-                    'coordenadas': coordenadas_serializable
+                    'coordenadas': coordenadas_serializable,
+                    'modelo_deteccao': placa_detectada['modelo_deteccao'],  # Adiciona o modelo usado
+                    'confianca_deteccao': round(float(placa_detectada['confianca_deteccao']), 4)  # Adiciona confiança da detecção
                 }
                 
                 placas_processadas.append(placa_info)

@@ -66,32 +66,38 @@ def carregar_modelos():
 
 # Detectar placas com fallback
 def detectar_placas(imagem, model_yolo, model_faster):
-    placas = []
+    placas_yolo = []
+    placas_faster = []
+    confianca_minima = 0.85
     
-    # Tentar YOLO primeiro
+    # Executar YOLO primeiro
     if model_yolo is not None:
-        resultados = model_yolo(imagem, conf=0.4, verbose=False)
-        
-        for r in resultados:
-            if r.boxes is not None:
-                for box in r.boxes:
-                    x1, y1, x2, y2 = box.xyxy[0].cpu().numpy().astype(int)
-                    confianca = float(box.conf[0])
-                    if confianca > 0.4:
-                        placas.append((x1, y1, x2, y2, confianca))
-        
-        # Verificar confiança >= 80%
-        placas_alta_confianca = [p for p in placas if p[4] >= 0.8]
-        
-        if placas_alta_confianca:
-            placas = placas_alta_confianca
-        else:
-            placas = []  # Limpar para fallback
-    
-    
-    # Fallback para Faster R-CNN
-    if not placas and model_faster is not None:
         try:
+            resultados = model_yolo(imagem, conf=0.4, verbose=False)
+            print("YOLO detection")
+            
+            placa_count = 0
+            for r in resultados:
+                if r.boxes is not None:
+                    for box in r.boxes:
+                        x1, y1, x2, y2 = box.xyxy[0].cpu().numpy().astype(int)
+                        confianca = float(box.conf[0])
+                        if confianca > 0.4:
+                            placa_count += 1
+                            print(f"🎯 YOLO Placa #{placa_count}: Confiança = {confianca:.3f} ({confianca*100:.1f}%)")
+                            placas_yolo.append((x1, y1, x2, y2, confianca, 'YOLO'))
+        except:
+            pass
+    
+    # Se temos múltiplas placas no YOLO, verificar se alguma tem confiança baixa
+    tem_confianca_baixa = any(p[4] < confianca_minima for p in placas_yolo)
+    usar_faster = len(placas_yolo) > 1 and tem_confianca_baixa
+    
+    # Executar Faster R-CNN se necessário
+    if (not placas_yolo or usar_faster) and model_faster is not None:
+        try:
+            print("Faster R-CNN detection")
+            
             if isinstance(imagem, str):
                 img = cv2.imread(imagem)
                 img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
@@ -117,12 +123,158 @@ def detectar_placas(imagem, model_yolo, model_faster):
                 
                 for box, score in zip(boxes[valid_indices], scores[valid_indices]):
                     x1, y1, x2, y2 = box.astype(int)
-                    placas.append((x1, y1, x2, y2, float(score)))
+                    placas_faster.append((x1, y1, x2, y2, float(score), 'Faster R-CNN'))
         except:
             pass
     
-    placas.sort(key=lambda x: x[4], reverse=True)
-    return placas
+    # Combinar resultados: substituir apenas placas com baixa confiança
+    if usar_faster and placas_yolo and placas_faster:
+        placas_finais = combinar_deteccoes_seletivo(placas_yolo, placas_faster, confianca_minima)
+        print(f"Combinação seletiva: {len(placas_yolo)} YOLO + {len(placas_faster)} Faster → {len(placas_finais)} finais")
+    elif placas_yolo:
+        # Filtrar apenas placas com alta confiança se usando só YOLO
+        placas_alta_confianca = [p for p in placas_yolo if p[4] >= confianca_minima]
+        placas_finais = placas_alta_confianca if placas_alta_confianca else placas_yolo
+    else:
+        placas_finais = placas_faster
+    
+    placas_finais.sort(key=lambda x: x[4], reverse=True)
+    return placas_finais
+
+def combinar_deteccoes_seletivo(placas_yolo, placas_faster, confianca_minima):
+    """Substitui apenas as placas do YOLO que têm confiança baixa por detecções do Faster R-CNN"""
+    placas_finais = []
+    threshold_sobreposicao = 0.5
+    placas_faster_usadas = set()
+    
+    print("🔄 Análise seletiva das detecções:")
+    
+    # Para cada detecção do YOLO
+    for i, placa_yolo in enumerate(placas_yolo, 1):
+        x1_y, y1_y, x2_y, y2_y, conf_y, _ = placa_yolo
+        
+        # Se a confiança do YOLO é boa, mantém
+        if conf_y >= confianca_minima:
+            placas_finais.append(placa_yolo)
+            print(f"✅ Placa #{i}: YOLO mantido (conf: {conf_y:.3f} >= {confianca_minima})")
+        else:
+            # Procurar substituição no Faster R-CNN
+            melhor_substituta = None
+            melhor_iou = 0
+            melhor_idx = -1
+            
+            for j, placa_faster in enumerate(placas_faster):
+                if j in placas_faster_usadas:
+                    continue
+                    
+                x1_f, y1_f, x2_f, y2_f, conf_f, _ = placa_faster
+                iou = calcular_iou((x1_y, y1_y, x2_y, y2_y), (x1_f, y1_f, x2_f, y2_f))
+                
+                # Encontrar a melhor sobreposição
+                if iou > threshold_sobreposicao and iou > melhor_iou:
+                    melhor_substituta = placa_faster
+                    melhor_iou = iou
+                    melhor_idx = j
+            
+            # Decidir se substitui ou mantém
+            if melhor_substituta and melhor_substituta[4] > conf_y:
+                placas_finais.append(melhor_substituta)
+                placas_faster_usadas.add(melhor_idx)
+                print(f"🔄 Placa #{i}: YOLO substituído por Faster R-CNN (YOLO: {conf_y:.3f} → Faster: {melhor_substituta[4]:.3f})")
+            else:
+                placas_finais.append(placa_yolo)
+                print(f"⚠️  Placa #{i}: YOLO mantido mesmo com baixa confiança ({conf_y:.3f}) - sem melhor alternativa")
+    
+    # Adicionar detecções únicas do Faster R-CNN (que não sobrepõem com nenhuma do YOLO)
+    for j, placa_faster in enumerate(placas_faster):
+        if j in placas_faster_usadas:
+            continue
+            
+        x1_f, y1_f, x2_f, y2_f, conf_f, _ = placa_faster
+        tem_sobreposicao = False
+        
+        for placa_yolo in placas_yolo:
+            x1_y, y1_y, x2_y, y2_y, _, _ = placa_yolo
+            iou = calcular_iou((x1_f, y1_f, x2_f, y2_f), (x1_y, y1_y, x2_y, y2_y))
+            
+            if iou > threshold_sobreposicao:
+                tem_sobreposicao = True
+                break
+        
+        if not tem_sobreposicao:
+            placas_finais.append(placa_faster)
+            print(f"➕ Nova placa: Faster R-CNN única (conf: {conf_f:.3f})")
+    
+    return placas_finais
+
+def combinar_deteccoes(placas_yolo, placas_faster):
+    """Combina detecções do YOLO e Faster R-CNN, escolhendo a melhor confiança para cada região"""
+    placas_combinadas = []
+    threshold_sobreposicao = 0.5
+    
+    # Para cada detecção do YOLO
+    for placa_yolo in placas_yolo:
+        x1_y, y1_y, x2_y, y2_y, conf_y, _ = placa_yolo
+        melhor_placa = placa_yolo
+        
+        # Procurar sobreposição com detecções do Faster R-CNN
+        for placa_faster in placas_faster:
+            x1_f, y1_f, x2_f, y2_f, conf_f, _ = placa_faster
+            
+            # Calcular IoU (Intersection over Union)
+            iou = calcular_iou((x1_y, y1_y, x2_y, y2_y), (x1_f, y1_f, x2_f, y2_f))
+            
+            # Se há sobreposição significativa, escolher a melhor confiança
+            if iou > threshold_sobreposicao:
+                if conf_f > melhor_placa[4]:
+                    melhor_placa = placa_faster
+                break
+        
+        placas_combinadas.append(melhor_placa)
+    
+    # Adicionar detecções do Faster R-CNN que não sobrepõem com YOLO
+    for placa_faster in placas_faster:
+        x1_f, y1_f, x2_f, y2_f, conf_f, _ = placa_faster
+        
+        tem_sobreposicao = False
+        for placa_yolo in placas_yolo:
+            x1_y, y1_y, x2_y, y2_y, _, _ = placa_yolo
+            iou = calcular_iou((x1_f, y1_f, x2_f, y2_f), (x1_y, y1_y, x2_y, y2_y))
+            
+            if iou > threshold_sobreposicao:
+                tem_sobreposicao = True
+                break
+        
+        if not tem_sobreposicao:
+            placas_combinadas.append(placa_faster)
+    
+    return placas_combinadas
+
+def calcular_iou(box1, box2):
+    """Calcula Intersection over Union entre duas caixas delimitadoras"""
+    x1_1, y1_1, x2_1, y2_1 = box1
+    x1_2, y1_2, x2_2, y2_2 = box2
+    
+    # Coordenadas da interseção
+    x1_int = max(x1_1, x1_2)
+    y1_int = max(y1_1, y1_2)
+    x2_int = min(x2_1, x2_2)
+    y2_int = min(y2_1, y2_2)
+    
+    # Área da interseção
+    if x2_int <= x1_int or y2_int <= y1_int:
+        return 0.0
+    
+    area_intersecao = (x2_int - x1_int) * (y2_int - y1_int)
+    
+    # Áreas das caixas
+    area_box1 = (x2_1 - x1_1) * (y2_1 - y1_1)
+    area_box2 = (x2_2 - x1_2) * (y2_2 - y1_2)
+    
+    # União
+    area_uniao = area_box1 + area_box2 - area_intersecao
+    
+    return area_intersecao / area_uniao if area_uniao > 0 else 0.0
 
 # Verificar se é placa Mercosul
 def verificar_placa_mercosul(placa_crop):
@@ -365,7 +517,7 @@ def processar_placas(imagem_path, modelo_yolo=None, modelo_faster=None):
     # Processar todas as placas
     resultados_placas = []
     
-    for i, (x1, y1, x2, y2, conf_det) in enumerate(placas):
+    for i, (x1, y1, x2, y2, conf_det, modelo_deteccao) in enumerate(placas):
         # Crop da placa com padding
         padding = 5
         placa_crop = img[max(0, y1-padding):min(img.shape[0], y2+padding), 
@@ -394,7 +546,9 @@ def processar_placas(imagem_path, modelo_yolo=None, modelo_faster=None):
             'score_final': score_final,
             'eh_mercosul': eh_mercosul,
             'coordenadas': (x1, y1, x2, y2),
-            'crop': placa_crop  # Mantém o crop na estrutura de dados
+            'crop': placa_crop,  # Mantém o crop na estrutura de dados
+            'modelo_deteccao': modelo_deteccao,  # Adiciona o modelo usado
+            'confianca_deteccao': conf_det  # Adiciona a confiança do modelo de detecção
         }
         
         resultados_placas.append(resultado_placa)
