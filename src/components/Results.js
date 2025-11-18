@@ -64,11 +64,7 @@ const Results = ({ results }) => {
                     </div>
                   )}
                   
-                  <div className="plate-details-mini">
-                    <div className="detail-mini">
-                      <span>Confiança:</span>
-                      <span>{(placa.score_final * 100).toFixed(1)}%</span>
-                    </div>
+                  <div className="plate-details-mini">                    
                     <div className="detail-mini">
                       <span>Situação:</span>
                       <span className={`situacao-mini ${placa.situacao.toLowerCase()}`}>

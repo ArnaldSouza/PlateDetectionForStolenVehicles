@@ -70,34 +70,63 @@ def detectar_placas(imagem, model_yolo, model_faster):
     placas_faster = []
     confianca_minima = 0.85
     
+    print("\n" + "="*50)
+    print("🔍 INICIANDO DETECÇÃO DE PLACAS")
+    print("="*50)
+    
     # Executar YOLO primeiro
     if model_yolo is not None:
         try:
+            print("📡 Executando YOLO...")
             resultados = model_yolo(imagem, conf=0.4, verbose=False)
-            print("YOLO detection")
             
             placa_count = 0
+            total_deteccoes = 0
+            
             for r in resultados:
                 if r.boxes is not None:
+                    total_deteccoes = len(r.boxes)
+                    print(f"📊 YOLO encontrou {total_deteccoes} detecções brutas")
+                    
                     for box in r.boxes:
                         x1, y1, x2, y2 = box.xyxy[0].cpu().numpy().astype(int)
                         confianca = float(box.conf[0])
+                        
+                        print(f"   🔍 Detecção bruta: conf={confianca:.3f} ({confianca*100:.1f}%) - {'✅ ACEITA' if confianca > 0.4 else '❌ REJEITADA'}")
+                        
                         if confianca > 0.4:
                             placa_count += 1
                             print(f"🎯 YOLO Placa #{placa_count}: Confiança = {confianca:.3f} ({confianca*100:.1f}%)")
                             placas_yolo.append((x1, y1, x2, y2, confianca, 'YOLO'))
-        except:
-            pass
+            
+            if total_deteccoes == 0:
+                print("❌ YOLO não encontrou nenhuma detecção")
+            elif placa_count == 0:
+                print("❌ YOLO encontrou detecções, mas todas abaixo de 40% de confiança")
+                
+        except Exception as e:
+            print(f"❌ Erro no YOLO: {e}")
+    else:
+        print("❌ Modelo YOLO não carregado")
     
-    # Se temos múltiplas placas no YOLO, verificar se alguma tem confiança baixa
+    print(f"\n📈 RESULTADO YOLO: {len(placas_yolo)} placas válidas detectadas")
+    
+    # Análise para decidir se usa Faster R-CNN
     tem_confianca_baixa = any(p[4] < confianca_minima for p in placas_yolo)
     usar_faster = len(placas_yolo) > 1 and tem_confianca_baixa
     
+    print(f"\n🤔 ANÁLISE DE DECISÃO:")
+    print(f"   📊 Placas YOLO: {len(placas_yolo)}")
+    print(f"   📊 Tem confiança baixa (<{confianca_minima*100:.0f}%): {tem_confianca_baixa}")
+    print(f"   📊 Múltiplas placas: {len(placas_yolo) > 1}")
+    print(f"   🎯 Usar Faster R-CNN: {not placas_yolo or usar_faster}")
+    
     # Executar Faster R-CNN se necessário
     if (not placas_yolo or usar_faster) and model_faster is not None:
+        motivo = "YOLO falhou completamente" if not placas_yolo else "Múltiplas placas com confiança baixa"
+        print(f"\n🚀 EXECUTANDO Faster R-CNN - Motivo: {motivo}")
+        
         try:
-            print("Faster R-CNN detection")
-            
             if isinstance(imagem, str):
                 img = cv2.imread(imagem)
                 img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
@@ -119,24 +148,52 @@ def detectar_placas(imagem, model_yolo, model_faster):
             if len(predictions) > 0:
                 boxes = predictions[0]['boxes'].cpu().numpy()
                 scores = predictions[0]['scores'].cpu().numpy()
-                valid_indices = scores > 0.4
                 
+                print(f"📊 Faster R-CNN encontrou {len(scores)} detecções brutas")
+                print(f"🔍 Confianças brutas: {[f'{s:.3f}' for s in scores]}")
+                
+                valid_indices = scores > 0.4
+                placas_validas = len(scores[valid_indices])
+                
+                print(f"📈 Placas válidas (>40%): {placas_validas}")
+                
+                placa_count_faster = 0
                 for box, score in zip(boxes[valid_indices], scores[valid_indices]):
                     x1, y1, x2, y2 = box.astype(int)
+                    placa_count_faster += 1
+                    print(f"🎯 Faster R-CNN Placa #{placa_count_faster}: Confiança = {score:.3f} ({score*100:.1f}%)")
                     placas_faster.append((x1, y1, x2, y2, float(score), 'Faster R-CNN'))
-        except:
-            pass
+            else:
+                print("❌ Faster R-CNN não retornou predições")
+                
+        except Exception as e:
+            print(f"❌ Erro no Faster R-CNN: {e}")
+    elif not model_faster:
+        print("❌ Modelo Faster R-CNN não carregado")
+    else:
+        print("⏭️ Faster R-CNN NÃO executado - YOLO teve sucesso suficiente")
     
-    # Combinar resultados: substituir apenas placas com baixa confiança
+    print(f"\n📈 RESULTADO Faster R-CNN: {len(placas_faster)} placas válidas detectadas")
+    
+    # Combinar resultados
+    print(f"\n🔄 COMBINAÇÃO DE RESULTADOS:")
     if usar_faster and placas_yolo and placas_faster:
+        print("🎯 Modo: Combinação seletiva (YOLO + Faster R-CNN)")
         placas_finais = combinar_deteccoes_seletivo(placas_yolo, placas_faster, confianca_minima)
-        print(f"Combinação seletiva: {len(placas_yolo)} YOLO + {len(placas_faster)} Faster → {len(placas_finais)} finais")
     elif placas_yolo:
-        # Filtrar apenas placas com alta confiança se usando só YOLO
+        print("🎯 Modo: Apenas YOLO (filtrado)")
         placas_alta_confianca = [p for p in placas_yolo if p[4] >= confianca_minima]
         placas_finais = placas_alta_confianca if placas_alta_confianca else placas_yolo
+        print(f"   📊 Placas alta confiança: {len(placas_alta_confianca)}/{len(placas_yolo)}")
     else:
+        print("🎯 Modo: Apenas Faster R-CNN (YOLO falhou)")
         placas_finais = placas_faster
+    
+    print(f"\n✅ RESULTADO FINAL: {len(placas_finais)} placas selecionadas")
+    for i, placa in enumerate(placas_finais, 1):
+        print(f"   🏆 Placa final #{i}: {placa[5]} - {placa[4]:.3f} ({placa[4]*100:.1f}%)")
+    
+    print("="*50)
     
     placas_finais.sort(key=lambda x: x[4], reverse=True)
     return placas_finais
@@ -389,16 +446,24 @@ def validar_formato_placa(texto, eh_mercosul=False):
 # Corrigir caracteres confusos
 def corrigir_caracteres_confusos(texto, eh_mercosul=False):
     texto = texto.upper().strip()
-    
-    correcoes = {
-        '0': ['O', 'D', 'Q', '6'], '1': ['I', 'L', 'T'], '2': ['Z'],
-        '3': ['8','B'], '5': ['S'], '6': ['G','0'], '8': ['B','3'], 
-        'O': ['0'], 'I': ['1'], 'L': ['1'], 'S': ['5'], 'Z': ['2'], 
-        'B': ['8','3'], 'G': ['6'], 'D': ['0'], 'Q': ['0'], 'T': ['1']
+    # Dicionário expandido de correções mais comum -> menos comum
+    correcoes_para_numero = {
+        'O': '0', 'D': '0', 'Q': '0', 'U': '0',  # Para 0
+        'I': '1', 'L': '1', 'T': '1', 'J': '1',  # Para 1
+        'Z': '2', 'S': '5',                       # Para 2 e 5
+        'E': '3', 'B': '8',                       # Para 3 e 8
+        'A': '4', 'R': '4',                       # Para 4
+        'G': '6', 'C': '6',                       # Para 6
+        'F': '7', 'P': '9',                       # Para 7 e 9
     }
-    
+    correcoes_para_letra = {
+        '0': 'O', '6': 'G',                       # Para O e G
+        '1': 'I', '7': 'T',                       # Para I e T
+        '2': 'Z', '5': 'S',                       # Para Z e S
+        '3': 'E', '8': 'B',                       # Para E e B
+        '4': 'A', '9': 'P',                       # Para A e P
+    }
     texto_corrigido = list(texto)
-    
     if len(texto) == 7:
         if eh_mercosul:
             posicoes_letras = [0, 1, 2, 4]
@@ -406,20 +471,56 @@ def corrigir_caracteres_confusos(texto, eh_mercosul=False):
         else:
             posicoes_letras = [0, 1, 2]
             posicoes_numeros = [3, 4, 5, 6]
-        
-        for i, char in enumerate(texto_corrigido):
-            if i in posicoes_letras and char.isdigit():
-                for letra, nums in correcoes.items():
-                    if char in nums and letra.isalpha():
-                        texto_corrigido[i] = letra
-                        break
-            elif i in posicoes_numeros and char.isalpha():
-                if char in correcoes:
-                    possiveis = [c for c in correcoes[char] if c.isdigit()]
-                    if possiveis:
-                        texto_corrigido[i] = possiveis[0]
-    
+        # Corrigir posições que deveriam ser letras
+        for i in posicoes_letras:
+            if i < len(texto_corrigido):
+                char = texto_corrigido[i]
+                if char.isdigit() and char in correcoes_para_letra:
+                    nova_letra = correcoes_para_letra[char]
+                    texto_corrigido[i] = nova_letra
+        # Corrigir posições que deveriam ser números
+        for i in posicoes_numeros:
+            if i < len(texto_corrigido):
+                char = texto_corrigido[i]
+                if char.isalpha() and char in correcoes_para_numero:
+                    novo_numero = correcoes_para_numero[char]
+                    texto_corrigido[i] = novo_numero
     return ''.join(texto_corrigido)
+
+# Função adicional para múltiplas tentativas de correção
+def aplicar_correcoes_multiplas(texto_original, eh_mercosul=False):
+    """Aplica múltiplas estratégias de correção"""
+    candidatos = [texto_original]
+    
+    # Correção padrão
+    corrigido_padrao = corrigir_caracteres_confusos(texto_original, eh_mercosul)
+    candidatos.append(corrigido_padrao)
+    
+    # Correções específicas adicionais para casos problemáticos
+    texto_temp = texto_original
+    
+    # Substituições específicas comuns
+    substituicoes_extras = [
+        ('0', 'O'), ('O', '0'),  # O mais comum
+        ('1', 'I'), ('I', '1'),  # I mais comum  
+        ('5', 'S'), ('S', '5'),  # S mais comum
+        ('8', 'B'), ('B', '8'),  # B mais comum
+        ('6', 'G'), ('G', '6'),  # G mais comum
+        ('2', 'Z'), ('Z', '2'),  # Z mais comum
+    ]
+    
+    for substituir, por in substituicoes_extras:
+        if substituir in texto_temp:
+            novo_candidato = texto_temp.replace(substituir, por)
+            candidatos.append(corrigir_caracteres_confusos(novo_candidato, eh_mercosul))
+    
+    # Remover duplicatas mantendo ordem
+    candidatos_unicos = []
+    for candidato in candidatos:
+        if candidato not in candidatos_unicos:
+            candidatos_unicos.append(candidato)
+    
+    return candidatos_unicos
 
 # Aplicar OCR com múltiplas configurações
 def aplicar_ocr_completo(imagem, reader):
@@ -463,6 +564,7 @@ def criar_versoes_ocr(imagem_nitida):
     return versoes_ocr
 
 # Processar OCR completo
+# Processar OCR completo melhorado
 def processar_ocr_completo(placa_crop, reader, eh_mercosul=False):
     placa_nitida = melhorar_nitidez_placa(placa_crop)
     versoes_ocr = criar_versoes_ocr(placa_nitida)
@@ -470,29 +572,33 @@ def processar_ocr_completo(placa_crop, reader, eh_mercosul=False):
     
     for nome_versao, imagem in versoes_ocr.items():
         resultados_ocr = aplicar_ocr_completo(imagem, reader)
-        
         for resultado in resultados_ocr:
             texto_original = resultado['texto']
             texto_limpo = re.sub(r'[^A-Z0-9]', '', texto_original)
-            
             if len(texto_limpo) >= 6:
-                texto_corrigido = corrigir_caracteres_confusos(texto_limpo, eh_mercosul)
-                validacao = validar_formato_placa(texto_corrigido, eh_mercosul)
-                score_final = resultado['confianca'] * 0.6 + validacao['score'] * 0.4
-                
-                if (eh_mercosul and 'mercosul' in validacao['tipo']) or (not eh_mercosul and 'antigo' in validacao['tipo']):
-                    score_final += 0.1
-                
-                resultado_completo = {
-                    'texto_final': texto_corrigido,
-                    'foi_corrigido': texto_corrigido != texto_limpo,
-                    'confianca_ocr': resultado['confianca'],
-                    'score_final': max(0, min(1, score_final)),
-                    'validacao': validacao
-                }
-                
-                todos_resultados.append(resultado_completo)
-    
+                # Aplicar múltiplas correções
+                candidatos = aplicar_correcoes_multiplas(texto_limpo, eh_mercosul)
+                # Avaliar cada candidato
+                melhor_candidato = None
+                melhor_score = 0
+                for candidato in candidatos:
+                    validacao = validar_formato_placa(candidato, eh_mercosul)
+                    score_candidato = resultado['confianca'] * 0.6 + validacao['score'] * 0.4
+                    if (eh_mercosul and 'mercosul' in validacao['tipo']) or (not eh_mercosul and 'antigo' in validacao['tipo']):
+                        score_candidato += 0.1
+                    if score_candidato > melhor_score:
+                        melhor_score = score_candidato
+                        melhor_candidato = candidato
+                if melhor_candidato:
+                    resultado_completo = {
+                        'texto_final': melhor_candidato,
+                        'foi_corrigido': melhor_candidato != texto_limpo,
+                        'confianca_ocr': resultado['confianca'],
+                        'score_final': max(0, min(1, melhor_score)),
+                        'validacao': validar_formato_placa(melhor_candidato, eh_mercosul),
+                        'candidatos_testados': len(candidatos)
+                    }
+                    todos_resultados.append(resultado_completo)
     todos_resultados.sort(key=lambda x: x['score_final'], reverse=True)
     return todos_resultados
 
