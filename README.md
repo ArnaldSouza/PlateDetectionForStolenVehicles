@@ -1,154 +1,100 @@
-Aqui está a versão atualizada **com os novos desenvolvedores**, **links revisados** e **formatação aprimorada** em **Markdown**, mantendo estilo profissional, limpo e coerente.
+# Stolen Vehicle Plate Detection — Fullstack Application
+
+Full-stack application for automatic license plate detection and stolen vehicle identification, built on top of the research published in our [Computer Engineering Final Project](https://github.com/ArnaldSouza/plate-detection-stolen-vehicles).
 
 ---
 
-# Sistema de Detecção de Placas para Veículos Roubados/Furtados
+## Overview
 
-Um sistema completo de detecção automática de placas veiculares desenvolvido com inteligência artificial. O sistema utiliza modelos de deep learning (YOLOv8 e Faster R-CNN) para detectar placas em imagens e verificar automaticamente se o veículo está na lista de veículos irregulares.
+The system runs a cascaded detection pipeline: YOLOv11 handles fast initial detection, Faster R-CNN refines low-confidence results, and EasyOCR extracts the plate characters. Results are cross-checked against a local database of flagged vehicles and returned to a React frontend in real time.
 
----
+**Research results (from the academic paper):**
 
-## 🚀 Características Principais
+| Model | Precision | Recall | mAP@0.5 |
+|---|---|---|---|
+| YOLOv11-nano | 94.4% | 95.6% | 99.2% |
+| Faster R-CNN (ResNet50-FPN) | 82.0% | 99.9% | 90.1% |
+| Global pipeline accuracy | — | — | 86.0% |
 
-* **Detecção Inteligente**: Uso de YOLOv8 e Faster R-CNN para alta precisão
-* **OCR Avançado**: Reconhecimento de caracteres via EasyOCR (PT/EN)
-* **Verificação Automática**: Consulta direta à base local de placas irregulares
-* **Interface Web Moderna**: Frontend React com upload drag-and-drop
-* **API RESTful**: Backend em Flask robusto e modular
-* **Processamento Offline**: Totalmente funcional sem internet
-* **Suporte a Diversos Formatos**: PNG, JPG, JPEG e GIF
+Inference speed: ~41 fps on GPU (NVIDIA Tesla T4)
 
 ---
 
-## 🏗️ Arquitetura do Sistema
+## Stack
 
-### **Frontend (React)**
+**Backend** · Python · Flask · PyTorch · YOLOv11 · Faster R-CNN · EasyOCR · OpenCV
 
-* Interface responsiva
-* Upload drag-and-drop
-* Exibição dos resultados e status do processamento
-
-### **Backend (Flask + IA)**
-
-* Detecção de placas via IA
-* OCR e validação das placas
-* Verificação contra base de dados local
-* Endpoints REST padronizados
-
-### **Modelos Utilizados**
-
-* **YOLOv8** — rapidez e precisão
-* **Faster R-CNN** — fallback robusto
-* **EasyOCR** — leitura de caracteres
+**Frontend** · React 18 · Axios · React Dropzone
 
 ---
 
-## 🛠️ Tecnologias Utilizadas
+## Pipeline
 
-### **Frontend**
-
-* React 18
-* React Dropzone
-* Styled Components
-* Axios
-
-### **Backend**
-
-* Flask
-* PyTorch
-* YOLOv8
-* Faster R-CNN
-* EasyOCR
-* OpenCV
-* Flask-CORS
-
----
-
-## 📋 Pré-requisitos
-
-* Node.js 16+
-* Python 3.8+
-* CUDA (opcional)
-* Modelos treinados em `backend/modelos/`
-
----
-
-## 🔧 Instalação e Configuração
-
-### **1. Clonar Repositório**
-
-```bash
-git clone https://github.com/ArnaldSouza/PlateDetectionForStolenVehicles.git
-cd PlateDetectionForStolenVehicles
+```
+Image upload
+    └── YOLOv11          → fast plate detection
+        └── Faster R-CNN → refinement on low-confidence detections
+            └── OpenCV   → preprocessing (grayscale, blur, threshold)
+                └── EasyOCR → character extraction
+                    └── DB lookup → REGULAR / IRREGULAR
 ```
 
-### **2. Backend**
+---
+
+## Getting started
+
+### Requirements
+
+- Python 3.8+
+- Node.js 16+
+- CUDA (optional, for GPU inference)
+- Trained models in `backend/modelos/`: `yolo.pt` and `faster.pt`
+
+### Backend
 
 ```bash
 cd backend
 python -m venv venv
-venv\Scripts\activate  # Windows
-# ou: source venv/bin/activate
+source venv/bin/activate  # Windows: venv\Scripts\activate
 pip install -r requirements.txt
-```
-
-Coloque os modelos em `backend/modelos/`:
-
-* `yolo.pt`
-* `faster.pt`
-
-### **3. Frontend**
-
-```bash
-cd ../
-npm install
-```
-
-### **4. Execução**
-
-**Backend**
-
-```bash
-cd backend
 python app.py
 ```
 
-**Frontend**
+### Frontend
 
 ```bash
+npm install
 npm start
+```
+
+Open [http://localhost:3000](http://localhost:3000)
+
+---
+
+## API
+
+### POST /upload
+
+```json
+{
+  "detectado": true,
+  "placa": "ABC1D23",
+  "confianca": 0.95,
+  "situacao": "IRREGULAR",
+  "tipo_placa": "MERCOSUL",
+  "tempo_processamento": 2.34
+}
+```
+
+### GET /health
+
+```json
+{ "status": "online", "modelos_carregados": true }
 ```
 
 ---
 
-## 🎯 Como Usar
-
-1. Abra: **[http://localhost:3000](http://localhost:3000)**
-2. Faça upload de uma imagem
-3. Clique em **Analisar Imagem**
-4. Veja:
-
-   * Placa detectada
-   * Confiança
-   * Status (REGULAR/IRREGULAR)
-   * Tipo de placa
-   * Tempo total
-
----
-
-## 📊 Fluxo de Processamento
-
-1. Upload da imagem
-2. Pré-processamento
-3. Detecção (YOLOv8 → fallback Faster R-CNN)
-4. OCR com EasyOCR
-5. Validação e normalização
-6. Verificação contra lista de irregulares
-7. Retorno ao frontend
-
----
-
-## 📂 Estrutura do Projeto
+## Project structure
 
 ```
 PlateDetectionForStolenVehicles/
@@ -156,146 +102,22 @@ PlateDetectionForStolenVehicles/
 │   ├── app.py
 │   ├── detector_placas.py
 │   ├── requirements.txt
-│   ├── modelos/
-│   │   ├── yolo.pt
-│   │   └── faster.pt
-│   └── uploads/
+│   └── modelos/
+│       ├── yolo.pt
+│       └── faster.pt
 ├── src/
 │   ├── components/
 │   ├── services/
-│   ├── config/
-│   ├── App.js
-│   └── index.js
-├── public/
-├── package.json
+│   └── App.js
 └── README.md
 ```
 
 ---
 
-## 🔧 API Endpoints
+## Authors
 
-### **POST /upload**
+- Arnald Souza · [LinkedIn](https://www.linkedin.com/in/arnaldsouza/) · [GitHub](https://github.com/ArnaldSouza)
+- Bruno Gabriel de Oliveira Targa · [LinkedIn](https://www.linkedin.com/in/brunotarga/)
+- Victor Soares Nunes Pires de Oliveira · [LinkedIn](https://www.linkedin.com/in/victorpioli/)
 
-Processa imagem enviada e retorna os dados detectados.
-
-**Sucesso**
-
-```json
-{
-  "detectado": true,
-  "placa": "ABC1D23",
-  "confianca": 0.9524,
-  "situacao": "REGULAR",
-  "tipo_placa": "MERCOSUL",
-  "tempo_processamento": 2.34
-}
-```
-
-**Erro**
-
-```json
-{
-  "detectado": false,
-  "erro": "Nenhuma placa detectada na imagem"
-}
-```
-
-### **GET /health**
-
-```json
-{
-  "status": "online",
-  "modelos_carregados": true
-}
-```
-
----
-
-## ⚙️ Configurações
-
-### **Lista de Placas Irregulares**
-
-`backend/app.py`:
-
-```python
-PLACAS_IRREGULARES = [
-    "IVZ9A33", "XYZ9W87", "DEF2E34", 
-    "OIS0410", "EUZ01J5", "MNO5H67"
-]
-```
-
-### **Configurações do Frontend**
-
-`src/config/config.js`:
-
-```javascript
-export const CONFIG = {
-  api: { baseURL: 'http://localhost:5000', timeout: 30000 },
-  upload: {
-    maxSize: 10485760,
-    allowedTypes: ['image/jpeg', 'image/jpg', 'image/png', 'image/gif']
-  }
-};
-```
-
----
-
-## 🧪 Testes
-
-### Testar API
-
-```bash
-curl http://localhost:5000/health
-```
-
-### Enviar imagem
-
-```bash
-curl -X POST -F "file=@imagem.jpg" http://localhost:5000/upload
-```
-
----
-
-## 🤝 Contribuição
-
-1. Faça um fork
-2. Crie uma branch:
-
-   ```bash
-   git checkout -b feature/nova-funcionalidade
-   ```
-3. Commit
-4. Push
-5. Abra PR
-
----
-
-## 📄 Licença
-
-Licença **MIT** – consulte o arquivo `LICENSE`.
-
----
-
-## 👥 Equipe
-
-### **Desenvolvedores Principais**
-
-* **Arnald Souza** — [LinkedIn](https://www.linkedin.com/in/arnaldsouza/)
-* **Bruno Targa** — [LinkedIn](https://www.linkedin.com/in/brunotarga/)
-* **Victor Nunes** — [LinkedIn](https://www.linkedin.com/in/victorpioli/)
-
-### **Orientação Acadêmica**
-
-* **Allan Marum** — [LinkedIn](https://www.linkedin.com/in/allanmarum/)
-
-### **Instituição**
-
-* **Centro Universitário Facens**
-
----
-
-## 📞 Contato
-
-* **Email:** [arnald.souza472@gmail.com](mailto:arnald.souza472@gmail.com)
-* **GitHub Issues:** utilize para bugs ou sugestões
+Advisor: Prof. Allan Marconato Marum · Centro Universitário Facens
